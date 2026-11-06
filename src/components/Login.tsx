@@ -1,14 +1,59 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
+const API_URL = 'https://cards-api.lukaszavaleta.xyz';
+
+type LoginResponse = {
+  token?: string;
+  user?: {
+    login?: string;
+  };
+  error?: string;
+};
+
 function Login() {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage(`Login form ready for ${login}`);
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          login,
+          password,
+        }),
+      });
+
+      const data: LoginResponse = await response.json();
+
+      if (!response.ok || !data.token) {
+        setMessage(data.error || 'Login failed');
+        return;
+      }
+
+      // Save the token for authenticated API requests.
+      sessionStorage.setItem('cardsToken', data.token);
+
+      setMessage(`Successfully logged in as ${data.user?.login || login}!`);
+      setPassword('');
+
+    } catch (error) {
+      console.error('Login error:', error);
+      setMessage('Unable to connect to the backend.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -38,7 +83,9 @@ function Login() {
           />
         </div>
 
-        <button type="submit">Log In</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Log In'}
+        </button>
       </form>
 
       <p role="status">{message}</p>
