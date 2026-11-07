@@ -27,15 +27,14 @@ function CardsPage({ onLogout }: CardsPageProps) {
   const [cardValue, setCardValue] = useState('0');
   const [publisher, setPublisher] = useState('');
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadCards = useCallback(async (term = '') => {
     if (!token || !userId) {
       setMessage('Please log in again.');
+      setLoading(false);
       return;
     }
-
-    setLoading(true);
 
     try {
       const query = term
@@ -68,12 +67,17 @@ function CardsPage({ onLogout }: CardsPageProps) {
   }, [token, userId]);
 
   useEffect(() => {
+  const timer = window.setTimeout(() => {
     void loadCards();
-  }, [loadCards]);
+  }, 0);
+
+  return () => window.clearTimeout(timer);
+}, [loadCards]);
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage('');
+    setLoading(true);
     await loadCards(search);
   }
 
@@ -230,6 +234,7 @@ function CardsPage({ onLogout }: CardsPageProps) {
             type="button"
             onClick={() => {
               setSearch('');
+              setLoading(true);
               void loadCards();
             }}
           >
