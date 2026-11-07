@@ -67,12 +67,12 @@ function CardsPage({ onLogout }: CardsPageProps) {
   }, [token, userId]);
 
   useEffect(() => {
-  const timer = window.setTimeout(() => {
-    void loadCards();
-  }, 0);
+    const timer = window.setTimeout(() => {
+      void loadCards();
+    }, 0);
 
-  return () => window.clearTimeout(timer);
-}, [loadCards]);
+    return () => window.clearTimeout(timer);
+  }, [loadCards]);
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -128,52 +128,82 @@ function CardsPage({ onLogout }: CardsPageProps) {
   }
 
   async function handleEdit(card: Card) {
-  if (!token) {
-    setMessage('Please log in again.');
-    return;
-  }
-
-  const newName = window.prompt(
-    'Enter the updated card name:',
-    card.playerName || card.card || ''
-  );
-
-  if (newName === null) return;
-
-  if (!newName.trim()) {
-    setMessage('Card name cannot be empty.');
-    return;
-  }
-
-  const field = card.playerName !== undefined ? 'playerName' : 'card';
-
-  try {
-    const response = await fetch(
-      `${API_URL}/api/cards/${card._id}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          [field]: newName.trim(),
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to update card');
+    if (!token) {
+      setMessage('Please log in again.');
+      return;
     }
 
-    setMessage('Card updated successfully!');
-    await loadCards(search);
-  } catch (error) {
-    setMessage(
-      error instanceof Error ? error.message : 'Unable to update card'
+    const newName = window.prompt(
+      'Enter the updated card name:',
+      card.playerName || card.card || ''
     );
+
+    if (newName === null) return;
+
+    if (!newName.trim()) {
+      setMessage('Card name cannot be empty.');
+      return;
+    }
+
+    const changes: {
+      playerName?: string;
+      card?: string;
+      cardValue?: number;
+    } = {};
+
+    if (card.playerName !== undefined) {
+      changes.playerName = newName.trim();
+
+      const valueInput = window.prompt(
+        'Enter the updated card value:',
+        String(card.cardValue ?? 0)
+      );
+
+      if (valueInput === null) return;
+
+      const newValue = Number(valueInput);
+
+      if (
+        valueInput.trim() === '' ||
+        !Number.isFinite(newValue) ||
+        newValue < 0
+      ) {
+        setMessage('Card value must be a valid, nonnegative number.');
+        return;
+      }
+
+      changes.cardValue = newValue;
+    } else {
+      changes.card = newName.trim();
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/cards/${card._id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(changes),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+
+        throw new Error(data.error || 'Failed to update card');
+      }
+
+      setMessage('Card updated successfully!');
+      await loadCards(search);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : 'Unable to update card'
+      );
+    }
   }
-}
 
   async function handleDelete(cardId: string) {
     if (!token) return;
@@ -312,20 +342,20 @@ function CardsPage({ onLogout }: CardsPageProps) {
               )}
 
               {' '}
-<button
-  type="button"
-  onClick={() => void handleEdit(card)}
->
-  Edit
-</button>
+              <button
+                type="button"
+                onClick={() => void handleEdit(card)}
+              >
+                Edit
+              </button>
 
-{' '}
-<button
-  type="button"
-  onClick={() => void handleDelete(card._id)}
->
-  Delete
-</button>
+              {' '}
+              <button
+                type="button"
+                onClick={() => void handleDelete(card._id)}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>
