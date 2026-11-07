@@ -1,11 +1,15 @@
 import PageTitle from '../components/PageTitle';
 import Login from '../components/Login';
 
-function LoginPage() {
+type LoginPageProps = {
+  onLogin: () => void;
+};
+
+function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <main>
       <PageTitle />
-      <Login />
+      <Login onLogin={onLogin} />
     </main>
   );
 }

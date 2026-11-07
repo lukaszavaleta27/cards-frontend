@@ -6,12 +6,17 @@ const API_URL = 'https://cards-api.lukaszavaleta.xyz';
 type LoginResponse = {
   token?: string;
   user?: {
+    _id?: string;
     login?: string;
   };
   error?: string;
 };
 
-function Login() {
+type LoginProps = {
+  onLogin: () => void;
+};
+
+function Login({ onLogin }: LoginProps) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -42,8 +47,14 @@ function Login() {
         return;
       }
 
-      // Save the token for authenticated API requests.
-      sessionStorage.setItem('cardsToken', data.token);
+      if (!data.user?._id) {
+        setMessage('Login response is missing a user ID.');
+        return;
+        }
+
+        sessionStorage.setItem('cardsToken', data.token);
+        sessionStorage.setItem('cardsUserId', data.user._id);
+        onLogin();
 
       setMessage(`Successfully logged in as ${data.user?.login || login}!`);
       setPassword('');
