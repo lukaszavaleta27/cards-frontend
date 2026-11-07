@@ -127,6 +127,54 @@ function CardsPage({ onLogout }: CardsPageProps) {
     }
   }
 
+  async function handleEdit(card: Card) {
+  if (!token) {
+    setMessage('Please log in again.');
+    return;
+  }
+
+  const newName = window.prompt(
+    'Enter the updated card name:',
+    card.playerName || card.card || ''
+  );
+
+  if (newName === null) return;
+
+  if (!newName.trim()) {
+    setMessage('Card name cannot be empty.');
+    return;
+  }
+
+  const field = card.playerName !== undefined ? 'playerName' : 'card';
+
+  try {
+    const response = await fetch(
+      `${API_URL}/api/cards/${card._id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          [field]: newName.trim(),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to update card');
+    }
+
+    setMessage('Card updated successfully!');
+    await loadCards(search);
+  } catch (error) {
+    setMessage(
+      error instanceof Error ? error.message : 'Unable to update card'
+    );
+  }
+}
+
   async function handleDelete(cardId: string) {
     if (!token) return;
 
@@ -264,12 +312,20 @@ function CardsPage({ onLogout }: CardsPageProps) {
               )}
 
               {' '}
-              <button
-                type="button"
-                onClick={() => void handleDelete(card._id)}
-              >
-                Delete
-              </button>
+<button
+  type="button"
+  onClick={() => void handleEdit(card)}
+>
+  Edit
+</button>
+
+{' '}
+<button
+  type="button"
+  onClick={() => void handleDelete(card._id)}
+>
+  Delete
+</button>
             </li>
           ))}
         </ul>
